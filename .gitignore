@@ -1,0 +1,10 @@
+data
+__pycache__
+test
+*.csv
+*.RData
+*.tex
+figure-pdf
+libs
+*_cache
+*.html
