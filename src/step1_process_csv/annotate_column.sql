@@ -1,4 +1,4 @@
--- Add annotations to the column
+-- Add annotations for the columns
 CREATE TABLE
     Annotations (column_name TEXT, annotation TEXT);
 

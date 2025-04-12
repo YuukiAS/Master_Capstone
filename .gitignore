@@ -8,3 +8,4 @@ figure-pdf
 libs
 *_cache
 *.html
+*.out

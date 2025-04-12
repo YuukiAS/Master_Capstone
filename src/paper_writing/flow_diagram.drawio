@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="Zb1G8R3_qdKKmk3x727R" name="第 1 页">
-        <mxGraphModel dx="358" dy="703" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="836" dy="631" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -16,31 +16,31 @@
                 <mxCell id="5" value="&lt;b&gt;Participants after XML file check&lt;br&gt;&lt;/b&gt;(n = 61,927)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="240" y="140" width="280" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="6" value="Excluded: Incomplete fitness test or&#xa;non-bicycle test participants&#xa;(n = 12,319)" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=10;" parent="1" vertex="1">
+                <mxCell id="6" value="Excluded: Incomplete/non-bicycle test and HRV unavailable participants&lt;br&gt;(n = 19,711)" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="540" y="220" width="240" height="50" as="geometry"/>
                 </mxCell>
                 <mxCell id="7" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;" parent="1" source="5" target="8" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="8" value="&lt;b&gt;Participants after fitness test criteria&lt;/b&gt;&lt;br&gt;(n = 49,608)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                <mxCell id="8" value="&lt;b&gt;Participants after fitness test criteria&lt;/b&gt;&lt;br&gt;(n = 42,216)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="240" y="240" width="280" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="9" value="Excluded: Statin users&#xa;(n = 7,465)" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=10;" parent="1" vertex="1">
+                <mxCell id="9" value="Excluded: Statin users&lt;br&gt;(n = 6,325)" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="540" y="320" width="240" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="10" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;" parent="1" source="8" target="11" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="11" value="&lt;b&gt;Participants after statin exclusion&lt;/b&gt;&lt;br&gt;(n = 42,143)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                <mxCell id="11" value="&lt;b&gt;Participants after statin exclusion&lt;/b&gt;&lt;br&gt;(n = 35,891)" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="240" y="340" width="280" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="12" value="Excluded: Prior CVD history&#xa;(n = 869)" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=10;" parent="1" vertex="1">
+                <mxCell id="12" value="Excluded: Prior CVD history&lt;br&gt;(n = 732)" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=10;" parent="1" vertex="1">
                     <mxGeometry x="540" y="420" width="240" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="13" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;" parent="1" source="11" target="14" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="14" value="&lt;b&gt;Final study population&lt;/b&gt;&lt;br&gt;(n = 41,274)&lt;br&gt;&lt;br&gt;&lt;b&gt;with incident CVD cases&lt;/b&gt;&amp;nbsp;&lt;div&gt;&lt;span style=&quot;color: rgb(0, 0, 0);&quot;&gt;(n = 5,214)&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;" parent="1" vertex="1">
+                <mxCell id="14" value="&lt;b&gt;Final study population&lt;/b&gt;&lt;br&gt;(n = 35,159)&lt;br&gt;&lt;br&gt;&lt;b&gt;with incident CVD cases&lt;/b&gt;&amp;nbsp;&lt;div&gt;&lt;span style=&quot;color: rgb(0, 0, 0);&quot;&gt;(n = 4,440)&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;" parent="1" vertex="1">
                     <mxGeometry x="240" y="440" width="280" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="15" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;edgeStyle=orthogonalEdgeStyle;" parent="1" source="2" target="3" edge="1">
