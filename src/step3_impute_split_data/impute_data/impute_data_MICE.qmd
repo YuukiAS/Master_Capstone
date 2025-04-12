@@ -1,0 +1,107 @@
+---
+title: 'Data Imputation'
+author: 'Mingcheng Hu'
+format: 
+    pdf:
+        toc: true
+        keep-tex: true
+        include-in-header: 
+            text: |
+                \usepackage{fvextra}
+                \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+                \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+```{r}
+library(mice)
+library(ggplot2)
+library(dplyr)
+library(corrplot)
+options(scipen = 999)  # disable scientific notation
+
+setwd("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/step3_impute_split_data/impute_data")
+```
+
+
+# Import and Preprocess Data
+
+```{r}
+data_unimputed <- read.csv("full_data.csv")
+(dim(data_unimputed))
+head(data_unimputed)
+```
+
+**For the missing rate, check `export_data.ipynb`.**
+
+Then, we should declare the type of categorical variables
+
+```{r}
+data_unimputed$ethnicity <- as.factor(data_unimputed$ethnicity)
+data_unimputed$sex <- as.factor(data_unimputed$sex)
+data_unimputed$smoking <- as.factor(data_unimputed$smoking)
+data_unimputed$diabetes <- as.factor(data_unimputed$diabetes)
+data_unimputed$hypertension_treatment <- as.factor(data_unimputed$hypertension_treatment)
+data_unimputed$education <- as.factor(data_unimputed$education)
+data_unimputed$activity <- as.factor(data_unimputed$activity)
+```
+
+We can also visualize the correlation matrix of the numeric variables.
+
+```{r, fig.width=12, fig.height=10}
+data_numeric <- data_unimputed[, sapply(data_unimputed, is.numeric)]
+# exclude eid
+data_numeric <- subset(data_numeric, select = -eid)
+cor_matrix <- cor(data_numeric, use = "pairwise.complete.obs")
+corrplot(cor_matrix, 
+         method = "color",      
+         type = "upper",       
+         order = "original",      
+         addCoef.col = "black", 
+         tl.col = "black",    
+         tl.srt = 45,          
+         diag = FALSE,
+         na.label = "NA")
+```
+
+There are no strong correlations among the numeric variables. Only the cholesterol variables and ECG-related variables are moderately correlated.
+
+
+# MICE Imputation
+
+## Run Imputation
+
+We only need one imputed dataset for subsequent analysis.
+
+```{r, label = "MICE Imputation", cache = TRUE}
+start_time <- proc.time()
+tryCatch({
+    data_imputed <- mice(
+        data_unimputed, 
+        m = 1, maxit = 50, seed = 1234, print=FALSE)
+}, error = function(e) {
+    print(e)
+    return(NULL)
+})
+end_time <- proc.time()
+run_time <- end_time - start_time
+print(run_time)
+
+save(data_imputed, file = "full_data_imputed_mice.RData")
+```
+
+
+## Check Imputation Results
+
+
+```{r}
+plot(data_imputed)  # note it is not dataframe, but an object
+```
+
+```{r}
+stripplot(data_imputed, pch = 20, cex = 1.2) 
+```
+
+```{r}
+densityplot(data_imputed)
+```
+

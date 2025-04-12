@@ -50,7 +50,10 @@ class TableNames:
     HRV_ENTROPY = "HRV_entropy"
     HRV_FRACTAL = "HRV_fractal"
 
-    PROCESSED = "Processed"  # processed variables that will be used for analysis
+    PROCESSED = "Processed"  # processed variables
+
+    COVARIATES = "Covariates"  # covariates that will be used for survival analysis
+    STATUS = "Status"  # health status of that will be used for participant selection and survival analysis
 
 
 class ColumnIDs:
