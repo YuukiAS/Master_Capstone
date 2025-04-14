@@ -1,5 +1,5 @@
 ---
-title: 'Data Imputation'
+title: 'Data Imputation: MissForest'
 author: 'Mingcheng Hu'
 format: 
     pdf:
@@ -25,6 +25,8 @@ setwd("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/step3_impute_split_data
 ```
 
 # Import and Preprocess Data
+
+**We will impute the data based on `eligible_data.csv`.**
 
 ```{r}
 data_unimputed <- read.csv("eligible_data.csv")

@@ -1,5 +1,5 @@
 ---
-title: 'Data Imputation'
+title: 'Data Imputation: MissForest'
 author: 'Mingcheng Hu'
 format: 
     pdf:
