@@ -155,12 +155,12 @@ results_univariate <- results_univariate %>% arrange(desc(hr)) # sort descending
 
 ```{r echo = FALSE, eval = FALSE}
 save(results_univariate,
-    file = get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin)
+    file = get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = "cox")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin))
+load(get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = "cox"))
 ```
 
 ```{r fig.height=30, fig.width=20}
@@ -214,12 +214,12 @@ summary(cox_model_full_complete)
 ```{r echo = FALSE, eval = FALSE}
 save(cox_model_full,
     cox_model_full_complete,
-    file = get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin)
+    file = get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin, model = "cox")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin))
+load(get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin, model = "cox"))
 ```
 
 # PH Assumption Assessment
@@ -277,12 +277,12 @@ print(selected_vars)
 save(cox_model_lasso.cv,
     cox_model_lasso,
     cox_model_lasso.coef,
-    file = get_data_path("cox_model_lasso", adjust_type_str, impute_type_str, include_statin)
+    file = get_data_path("cox_model_lasso", adjust_type_str, impute_type_str, include_statin, model = "cox")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("cox_model_lasso", adjust_type_str, impute_type_str, include_statin))
+load(get_data_path("cox_model_lasso", adjust_type_str, impute_type_str, include_statin, model = "cox"))
 ```
 
 ```{r label = "LASSO: Visualize the LASSO Path"}
@@ -315,12 +315,12 @@ cox_model_step <- MASS::stepAIC(cox_model_full_complete,
 
 ```{r echo = FALSE, eval = FALSE}
 save(cox_model_step,
-    file = get_data_path("cox_model_step", adjust_type_str, impute_type_str, include_statin)
+    file = get_data_path("cox_model_step", adjust_type_str, impute_type_str, include_statin, model = "cox")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("cox_model_step", adjust_type_str, impute_type_str, include_statin))
+load(get_data_path("cox_model_step", adjust_type_str, impute_type_str, include_statin, model = "cox"))
 ```
 
 ```{r}
@@ -404,18 +404,20 @@ category_colors <- c(
     "unknown"   = "#000000" # 纯黑色
 )
 category_colors_names <- c(
-    "covariate"  = "pink",      # 浅粉色
-    "time"       = "blue",      # 蓝色
-    "frequency"  = "green",     # 绿色
-    "poincare"   = "red",       # 红色
-    "entropy"    = "orange",    # 橙色
-    "fractal"    = "gold"       # 金色
+    "covariate"  = "pink", # 浅粉色
+    "time"       = "blue", # 蓝色
+    "frequency"  = "green", # 绿色
+    "poincare"   = "red", # 红色
+    "entropy"    = "orange", # 橙色
+    "fractal"    = "gold" # 金色
 )
 category_legend <- sapply(names(category_colors_names), function(cat) {
-    sprintf("%s: %s", 
-            tools::toTitleCase(cat),
-            tools::toTitleCase(category_colors_names[cat]))
-}) %>% 
+    sprintf(
+        "%s: %s",
+        tools::toTitleCase(cat),
+        tools::toTitleCase(category_colors_names[cat])
+    )
+}) %>%
     paste(collapse = "; ")
 
 
