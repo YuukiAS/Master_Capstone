@@ -96,11 +96,39 @@ count_missing_rate <- function(df) {
 }
 
 
-get_data_path <- function(prefix, adjust_type, impute_type, include_statin) {
-    path <- if (include_statin == "yes") {
-        paste0(prefix, "_", adjust_type, "_", impute_type, "_statin.RData")
+get_data_path <- function(prefix, adjust_type, impute_type, include_statin, model = NULL) {
+    if (is.null(model)) {
+        path <- if (include_statin == "yes") {
+            paste0(prefix, "_", adjust_type, "_", impute_type, "_statin.RData")
+        } else {
+            paste0(prefix, "_", adjust_type, "_", impute_type, ".RData")
+        }
+        return(path)
+    } else if (model == "cox") {
+        work_dir <- "/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/step4_build_survival_model/Cox"
+        path <- if (include_statin == "yes") {
+            paste0(work_dir, "/", prefix, "_", adjust_type, "_", impute_type, "_statin.RData")
+        } else {
+            paste0(work_dir, "/", prefix, "_", adjust_type, "_", impute_type, ".RData")
+        }
+        return(path)
+    } else if (model == "rsf") {
+        work_dir <- "/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/step4_build_survival_model/RSF"
+        path <- if (include_statin == "yes") {
+            paste0(work_dir, "/", prefix, "_", adjust_type, "_", impute_type, "_statin.RData")
+        } else {
+            paste0(work_dir, "/", prefix, "_", adjust_type, "_", impute_type, ".RData")
+        }
+        return(path)
+    } else if (model == "xgb") {
+        work_dir <- "/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/step4_build_survival_model/XGBoost"
+        path <- if (include_statin == "yes") {
+            paste0(work_dir, "/", prefix, "_", adjust_type, "_", impute_type, "_statin.RData")
+        } else {
+            paste0(work_dir, "/", prefix, "_", adjust_type, "_", impute_type, ".RData")
+        }
+        return(path)
     } else {
-        paste0(prefix, "_", adjust_type, "_", impute_type, ".RData")
+        stop("Invalid model type!")
     }
-    return(path)
 }

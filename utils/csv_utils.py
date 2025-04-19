@@ -23,7 +23,9 @@ import pandas as pd
 from IPython.display import display, HTML
 import dask.dataframe as dd
 import pickle
+import scipy.stats as stats
 from tqdm import tqdm
+import warnings
 
 from .constants import DatabaseConfig
 
@@ -219,3 +221,76 @@ def generate_column_defs(file_path=DatabaseConfig.CSV_PATH):
         pickle.dump(column_defs, file)
 
     print(f"Column definitions have been saved to {DatabaseConfig.COLUMN_DEFS_PATH}.")
+
+# This function is verified using R
+def create_descriptive_stats(
+    df, event_col_name, filter_cols=None, order=None
+):
+    """
+    Create descriptive statistics tables for continuous and categorical variables
+    """
+    descriptive_stats = {}
+
+    if filter_cols is not None:
+        df = df.drop(columns=filter_cols)
+
+    continuous_cols = df.select_dtypes(include=["float64", "int64"]).columns
+    categorical_cols = df.select_dtypes(include=["object", "category"]).columns
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=FutureWarning)
+
+        # * Here we will analyze by the CVD status
+        for col in continuous_cols:
+            # remove NaN values
+            num_na = df[col].isna().sum()
+
+            numeric_stats = (
+                df.groupby(event_col_name)[col].agg(["count", "mean", "std"]).round(1)
+            )
+            numeric_stats["count"] = numeric_stats["count"].apply(
+                lambda x: f"{int(x):,d}"
+            )  # add comma as thousand separator
+            no_event = df[df[event_col_name] == 0][col].dropna()
+            event = df[df[event_col_name] == 1][col].dropna()
+            _, p_val = stats.ttest_ind(
+                no_event, event, equal_var=False
+            )  # two sample t-test for independent samples -> statistic, pvalue
+            descriptive_stats[col] = {
+                "stats": numeric_stats,
+                "p_value": p_val,
+                "missing_rate": num_na / len(df),
+                "missing_n": num_na,
+            }
+
+        for col in categorical_cols:
+            # remove NaN values
+            num_na = df[col].isna().sum()
+
+            categorical_counts = df.groupby(event_col_name)[col].value_counts()
+            categorical_freqs = (
+                df.groupby(event_col_name)[col].value_counts(normalize=True).mul(100).round(1)
+            )  # frequency in percentage
+
+            categorical_stats = pd.concat(
+                [categorical_counts, categorical_freqs], axis=1
+            ).apply(lambda x: f"{int(x[0]):,d} ({x[1]:.2f}%)", axis=1)
+
+            contingency = pd.crosstab(df[col], df[event_col_name])
+            _, p_val, _, _ = stats.chi2_contingency(
+                contingency
+            )  # Chi-square test ->statistic, pvalue, dof, expected_freq
+            descriptive_stats[col] = {
+                "stats": categorical_stats,
+                "p_value": p_val,
+                "missing_rate": num_na / len(df),
+                "missing_n": num_na,
+            }
+
+    if order:
+        descriptive_stats_ordered = {}
+        for col in order:
+            descriptive_stats_ordered[col] = descriptive_stats[col]
+        descriptive_stats = descriptive_stats_ordered
+
+    return descriptive_stats
