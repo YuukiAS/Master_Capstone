@@ -1,0 +1,110 @@
+---
+title: 'Variable Selection Result: Random Survival Forest'
+author: 'Mingcheng Hu'
+format: 
+    pdf:
+        toc: true
+        keep-tex: true
+        include-in-header: 
+            text: |
+                \usepackage{fvextra}
+                \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+                \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+
+## Minimally-adjusted Model
+
+```{r}
+library(tidyverse)
+library(randomForestSRC)
+
+source("/work/users/y/u/yuukias/BIOS-Material/BIOS992/utils/csv_utils.r")
+# * Don't use setwd() for Quarto documents!
+# setwd("/work/users/y/u/yuukias/BIOS-Material/BIOS992/data")
+```
+
+```{r}
+adjust_type_str <- "minimal"
+impute_type_str <- "unimputed"
+include_statin <- "no"
+file_path_minimal <- get_data_path("vimp_rsf", 
+                                    adjust_type_str, 
+                                    impute_type_str, 
+                                    include_statin, 
+                                    model = "rsf")
+load(file_path_minimal)
+```
+
+```{r}
+print(vimp_rsf$importance)
+```
+
+```{r}
+print(vimp_rsf_full$importance)
+```
+
+```{r echo = FALSE}
+rm(vimp_rsf, vimp_rsf_full)
+```
+
+## Partialy-adjusted Model
+
+```{r}
+adjust_type_str <- "partial"
+impute_type_str <- "unimputed"
+include_statin <- "no"
+file_path_partial <- get_data_path("vimp_rsf", 
+                                    adjust_type_str, 
+                                    impute_type_str, 
+                                    include_statin, 
+                                    model = "rsf")
+load(file_path_partial)
+```
+
+```{r}
+print(vimp_rsf$importance)
+```
+
+```{r}
+print(vimp_rsf_full$importance)
+```
+
+```{r echo = FALSE}
+rm(vimp_rsf, vimp_rsf_full)
+```
+
+
+
+## Fully-adjusted Model
+
+
+```{r}
+adjust_type_str <- "full"
+impute_type_str <- "imputed"
+include_statin <- "no"
+file_path_full1 <- get_data_path("vimp_rsf", 
+                                adjust_type_str, 
+                                impute_type_str, 
+                                include_statin, 
+                                model = "rsf")
+file_path_full2 <- get_data_path("vimp_rsf_full", 
+                                adjust_type_str, 
+                                impute_type_str, 
+                                include_statin, 
+                                model = "rsf")
+load(file_path_full1)
+load(file_path_full2)
+```
+
+```{r}
+print(vimp_rsf$importance)
+```
+
+```{r}
+print(vimp_rsf_full$importance)
+```
+
+```{r echo = FALSE}
+rm(vimp_rsf, vimp_rsf_full)
+```

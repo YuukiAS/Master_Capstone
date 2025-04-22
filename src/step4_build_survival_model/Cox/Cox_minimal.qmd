@@ -378,6 +378,16 @@ for (variable in variable_names_all) {
 }
 ```
 
+```{r echo = FALSE}
+# Save the selected times for each variable
+save(variable_selection_matrix,
+    file = get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+```
+
+```{r echo = FALSE}
+load(get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+```
+
 ```{r}
 symbol_selected <- "*"
 
@@ -450,8 +460,4 @@ selection_table %>%
         general_title = "Note:"
     )
 ```
-
-
-
-
 

@@ -1,0 +1,232 @@
+---
+title: 'Variable Selection Result: Cox Proportional Hazards Model'
+author: 'Mingcheng Hu'
+format: 
+    pdf:
+        toc: true
+        keep-tex: true
+        include-in-header: 
+            text: |
+                \usepackage{fvextra}
+                \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+                \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+```{r output = FALSE}
+library(tidyverse)
+library(kableExtra)
+
+source("/work/users/y/u/yuukias/BIOS-Material/BIOS992/utils/csv_utils.r")
+# * Don't use setwd() for Quarto documents!
+# setwd("/work/users/y/u/yuukias/BIOS-Material/BIOS992/data")
+```
+
+
+```{r}
+variable_selection_results <- list()
+adjust_type_str <- "minimal"
+impute_type_str <- "unimputed"
+include_statin <- "no"
+file_path_minimal <- get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = 
+"cox")
+load(file_path_minimal)
+variable_selection_results[[adjust_type_str]] <- variable_selection_matrix
+
+
+adjust_type_str <- "partial"
+impute_type_str <- "unimputed"
+include_statin <- "no"
+file_path_partial <- get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = 
+"cox")
+load(file_path_partial)
+variable_selection_results[[adjust_type_str]] <- variable_selection_matrix
+
+
+adjust_type_str <- "full"
+impute_type_str <- "imputed"
+include_statin <- "no"
+file_path_full <- get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = 
+"cox")
+load(file_path_full)
+variable_selection_results[[adjust_type_str]] <- variable_selection_matrix
+```
+
+## Table
+
+
+```{r}
+visualize_table <- function(variable_selection_matrix) {
+    variable_names_all <- rownames(variable_selection_matrix)
+    symbol_selected <- "*"
+
+    selection_table <- data.frame(
+        Variable = variable_names_all,
+        Univariate = ifelse(variable_selection_matrix[, "univariate"] == 1, symbol_selected, ""),
+        Multivariate = ifelse(variable_selection_matrix[, "multivariate"] == 1, symbol_selected, ""),
+        LASSO = ifelse(variable_selection_matrix[, "lasso"] == 1, symbol_selected, ""),
+        Stepwise = ifelse(variable_selection_matrix[, "stepwise"] == 1, symbol_selected, "")
+    ) %>%
+        mutate(Num_Selected = rowSums(variable_selection_matrix)) %>%
+        arrange(desc(Num_Selected), Variable) %>%
+        as.data.frame() %>%
+        remove_rownames()
+
+    variable_categories <- sapply(variable_names_all, determine_category)
+    category_colors <- c(
+        "covariate" = "#FFB6C1", # 浅粉色（柔和好看）
+        "time"      = "#1E90FF", # 道奇蓝（经典蓝色）
+        "frequency" = "#32CD32", # 酸橙绿（鲜艳绿色）
+        "poincare"  = "#FF4500", # 橙红色
+        "entropy"   = "#FF8C00", # 深橙色
+        "fractal"   = "#FFD700", # 金黄色
+        "unknown"   = "#000000" # 纯黑色
+    )
+    category_colors_names <- c(
+        "covariate"  = "pink", # 浅粉色
+        "time"       = "blue", # 蓝色
+        "frequency"  = "green", # 绿色
+        "poincare"   = "red", # 红色
+        "entropy"    = "orange", # 橙色
+        "fractal"    = "gold" # 金色
+    )
+    category_legend <- sapply(names(category_colors_names), function(cat) {
+        sprintf(
+            "%s: %s",
+            tools::toTitleCase(cat),
+            tools::toTitleCase(category_colors_names[cat])
+        )
+    }) %>%
+        paste(collapse = "; ")
+
+
+    selection_table %>%
+        kbl(
+            caption = "Variable Selection by Different Models",
+            align = c("|l", "c", "c", "c", "c", "c|"),
+            col.names = c("Variable", "Univariate", "Multivariate", "LASSO", "Stepwise", "Selected Times"),
+            longtable = TRUE
+        ) %>%
+        kable_styling(
+            bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+            position = "center",
+            font_size = 9,
+            latex_options = c("repeat_header", "striped", "HOLD_position")
+        ) %>%
+        # Add color for different categories of variables
+        column_spec(1,
+            color = category_colors[variable_categories[selection_table$Variable]],
+            bold = TRUE
+        ) %>%
+        # Add a header colname for four columns: Univariate, Multivariate, LASSO, Stepwise
+        add_header_above(c(
+            " " = 1,
+            "Selection Methods" = 4,
+            " " = 1
+        )) %>%
+        footnote(
+            general = sprintf("%s", category_legend),
+            general_title = "Note:"
+        )
+}
+```
+
+### Minimally-adjusted Model
+```{r}
+adjust_type_str <- "minimal"
+impute_type_str <- "unimputed"
+include_statin <- "no"
+file_path_minimal <- get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = 
+"cox")
+load(file_path_minimal)
+```
+
+```{r label = "Table: Minimally-adjusted Model"}
+visualize_table(variable_selection_results[[adjust_type_str]])
+```
+
+```{r echo = FALSE}
+rm(results_univariate)
+```
+
+
+### Partially-adjusted Model
+
+```{r}
+adjust_type_str <- "partial"
+impute_type_str <- "unimputed"
+include_statin <- "no"
+file_path_partial <- get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = 
+"cox")
+load(file_path_partial)
+```
+
+```{r label = "Table: Partially-adjusted Model"}
+visualize_table(variable_selection_results[[adjust_type_str]])
+```
+
+```{r echo = FALSE}
+rm(results_univariate)
+```
+
+### Fully-adjusted Model
+
+```{r}
+adjust_type_str <- "full"
+impute_type_str <- "imputed"
+include_statin <- "no"
+file_path_full <- get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = 
+"cox")
+load(file_path_full)
+```
+
+```{r label = "Table: Fully-adjusted Model"}
+visualize_table(variable_selection_results[[adjust_type_str]])
+```
+
+```{r echo = FALSE}
+rm(results_univariate)
+```
+
+
+## Figure
+
+```{r}
+# * Note the functions here to compose the dataframe
+df_cox <- bind_rows(
+    lapply(names(variable_selection_results), function(adjust_type_str) {
+        as.data.frame(variable_selection_results[[adjust_type_str]]) %>%
+            mutate(Feature = rownames(variable_selection_results[[adjust_type_str]])) %>%
+            mutate(Adjustment = adjust_type_str) %>%
+            pivot_longer(cols = -c(Feature, Adjustment), names_to = "Model", values_to = "Selected")
+    })
+)
+df_cox  # note now each row corresponds to a single model
+```
+
+```{r}
+# We would like to sum the selected times for each feature across different models
+df_cox <- df_cox %>%
+    group_by(Feature, Adjustment) %>%
+    summarise(Selected = sum(Selected)) %>%
+    ungroup()
+df_cox
+```
+
+```{r}
+# However, there are too many features to display on a single plot, we will need to get category for each feature.
+df_cox <- df_cox %>%
+    mutate(Category = sapply(Feature, determine_category))
+```
+
+```{r}
+df_cox$Adjustment <- factor(df_cox$Adjustment, levels = c("minimal", "partial", "full"))
+```
+
+```{r label = "Cox: Visualization", fig.height=30, fig.width=30}
+ggplot(df_cox, aes(x = Feature, y = Selected, fill = Adjustment)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    scale_fill_brewer(palette = "Set2") +
+    facet_wrap(~Category, scales = "free_x") +
+    # * Rotate the labels
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
