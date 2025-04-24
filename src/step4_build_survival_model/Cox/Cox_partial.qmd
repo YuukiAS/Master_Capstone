@@ -116,7 +116,7 @@ data_complete <- na.omit(data)
 
 # Univariate Cox Proportional Hazards Model
 
-```{r label = "Univariate Cox Proportional Hazards Model"}
+```{r label = "Univariate Cox Proportional Hazards Model", eval = FALSE}
 if (!("time" %in% colnames(data) && "event" %in% colnames(data))) {
     stop("time and event columns are required")
 }
@@ -153,7 +153,7 @@ results_univariate$p_value <- round(results_univariate$p_value, 3)
 results_univariate <- results_univariate %>% arrange(desc(hr)) # sort descendingly by HR
 ```
 
-```{r echo = FALSE}
+```{r echo = FALSE, eval = FALSE}
 save(results_univariate,
     file = get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = "cox")
 )
@@ -201,17 +201,17 @@ results_univariate %>%
 
 # Multivariate Cox Proportional Hazards Model
 
-```{r label = "Multivariate Cox Proportional Hazards Model: All Data"}
+```{r label = "Multivariate Cox Proportional Hazards Model: All Data", eval = FALSE}
 cox_model_full <- coxph(Surv(time, event) ~ ., data = data)
 summary(cox_model_full)
 ```
 
-```{r label = "Multivariate Cox Proportional Hazards Model: Complete Case Analysis"}
+```{r label = "Multivariate Cox Proportional Hazards Model: Complete Case Analysis", eval = FALSE}
 cox_model_full_complete <- coxph(Surv(time, event) ~ ., data = data_complete)
 summary(cox_model_full_complete)
 ```
 
-```{r echo = FALSE}
+```{r echo = FALSE, eval = FALSE}
 save(cox_model_full,
     cox_model_full_complete,
     file = get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin, model = "cox")
@@ -271,7 +271,7 @@ print(cox_model_lasso.cv$lambda.1se)
 
 As mentioned in the paper, we will use the value of hyperparameter `lambda.1se` that gave the most shrunk model but still was within one standard error from the value that gave the lowest error. This is shown to produce consistently better performance than `lambda.min`.
 
-```{r label = "LASSO: Model Fitting"}
+```{r label = "LASSO: Model Fitting", eval = FALSE}
 cox_model_lasso <- glmnet(
     x,
     y,
@@ -285,7 +285,7 @@ selected_vars <- rownames(cox_model_lasso.coef)[which(cox_model_lasso.coef != 0)
 print(selected_vars)
 ```
 
-```{r echo = FALSE}
+```{r echo = FALSE, eval = FALSE}
 save(cox_model_lasso.cv,
     cox_model_lasso,
     cox_model_lasso.coef,
@@ -361,8 +361,10 @@ variable_names_multivariate <- summary(cox_model_full_complete)$coefficients %>%
 
 variable_names_lasso <- rownames(cox_model_lasso.coef)[which(cox_model_lasso.coef != 0)]
 
-variable_names_step <- cox_model_step$coefficients %>%
-    names()
+variable_names_step <- summary(cox_model_step)$coefficients %>%
+    as.data.frame() %>%
+    filter(`Pr(>|z|)` < 0.05) %>%
+    rownames()
 ```
 
 ```{r}

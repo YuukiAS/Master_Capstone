@@ -349,8 +349,10 @@ variable_names_multivariate <- summary(cox_model_full_complete)$coefficients %>%
 
 variable_names_lasso <- rownames(cox_model_lasso.coef)[which(cox_model_lasso.coef != 0)]
 
-variable_names_step <- cox_model_step$coefficients %>%
-    names()
+variable_names_step <- summary(cox_model_step)$coefficients %>%
+    as.data.frame() %>%
+    filter(`Pr(>|z|)` < 0.05) %>%
+    rownames()
 ```
 
 ```{r}

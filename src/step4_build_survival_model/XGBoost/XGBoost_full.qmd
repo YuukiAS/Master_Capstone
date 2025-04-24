@@ -270,7 +270,7 @@ tune_xgb <- function(params_trial) {
             params_trial
         ),
         data = dtrain,
-        nrounds = 500,
+        nrounds = 1000,
         early_stopping_rounds = 10,
         watchlist = list(train = dtrain, val = dval),
         verbose = 0
@@ -282,7 +282,7 @@ tune_xgb <- function(params_trial) {
 }
 ```
 
-```{r title = "Tuning XGBoost hyperparameters", eval = FALSE}
+```{r title = "Tuning XGBoost hyperparameters"}
 tuning_results <- pmclapply(1:n_trials, function(i) {
     params_trial <- generate_design_random(param_set, n = 1)$data
     params_trial <- param_set$trafo(params_trial)
@@ -291,7 +291,7 @@ tuning_results <- pmclapply(1:n_trials, function(i) {
 }, title = "Tuning XGBoost hyperparameters")
 ```
 
-```{r echo = FALSE, eval = FALSE}
+```{r echo = FALSE}
 save(tuning_results,
     file = get_data_path("xgb_tuning_results", adjust_type_str, impute_type_str, include_statin, model = "xgb")
 )
@@ -301,8 +301,22 @@ save(tuning_results,
 load(get_data_path("xgb_tuning_results", adjust_type_str, impute_type_str, include_statin, model = "xgb"))
 ```
 
+
 ```{r}
-tuning_results <- bind_rows(tuning_results)  # convert list of lists to a data frame
+tuning_results_valid <- list()
+error_indices <- c()
+for (i in seq_along(tuning_results)) {
+    if (!inherits(tuning_results[[i]], "try-error")) {
+        tuning_results_valid[[length(tuning_results_valid) + 1]] <- tuning_results[[i]]
+    } else {
+        error_indices <- c(error_indices, i)
+        cat("Error in trial", i, ":", as.character(tuning_results[[i]]), "\n")
+    }
+}
+```
+
+```{r}
+tuning_results <- bind_rows(tuning_results_valid)  # convert list of lists to a data frame
 tuning_results_best <- tuning_results[which.max(tuning_results$score), ]
 
 
@@ -320,7 +334,7 @@ print(model_params)
 
 ## Variable Selection
 
-```{r label = "Variable Selection-1", eval = FALSE}
+```{r label = "Variable Selection-1"}
 # * As mentioned in the paper, we use AFT model instead of Cox model.
 xgb_var_select <- xgb.train(
     params = c(
@@ -332,13 +346,13 @@ xgb_var_select <- xgb.train(
         model_params
     ),
     data = dtrain,
-    nrounds = 100,
+    nrounds = 1000,
     early_stopping_rounds = 10,
     watchlist = list(train = dtrain, val = dval)
 )
 ```
 
-```{r echo = FALSE, eval = FALSE}
+```{r echo = FALSE}
 save(xgb_var_select,
     file = get_data_path("xgb_var_select_model", adjust_type_str, impute_type_str, include_statin, model = "xgb")
 )
@@ -357,7 +371,7 @@ vars_ranked <- xgb_importance$Feature
 
 ## Cross Validation to Select the Best Number of Features
 
-```{r label = "Cross Validation to Select the Best Number of Features", eval = FALSE}
+```{r label = "Cross Validation to Select the Best Number of Features"}
 # * xgb.cv is not available for AFT model.
 set.seed(1234)
 folds <- createFolds(data$event, k = n_folds)
@@ -405,7 +419,7 @@ cv_errors <- pmclapply(seq(1, length(vars_ranked), by = 1), function(num_vars) {
                 model_params
             ),
             data = dtrain_fold,
-            nrounds = 500,
+            nrounds = 1000,
             early_stopping_rounds = 10,
             watchlist = list(train = dtrain_fold, val = dval_fold),
             verbose = 0
@@ -422,12 +436,12 @@ cv_errors <- pmclapply(seq(1, length(vars_ranked), by = 1), function(num_vars) {
 }, title = "Cross Validation to Select the Best Number of Features")
 ```
 
-```{r include = FALSE, eval = FALSE}
+```{r include = FALSE}
 best_num_vars <- which.min(cv_errors)
 vars_selected <- vars_ranked[1:best_num_vars]
 ```
 
-```{r echo = FALSE, eval = FALSE}
+```{r echo = FALSE}
 save(cv_errors, vars_selected,
     file = get_data_path("xgb_var_select_name", adjust_type_str, impute_type_str, include_statin, model = "xgb")
 )
@@ -481,7 +495,7 @@ xgb_model <- xgb.train(
         model_params
     ),
     data = dtrain_selected,
-    nrounds = 100,
+    nrounds = 1000,
     early_stopping_rounds = 10,
     watchlist = list(train = dtrain_selected, val = dval_selected)
 )
@@ -509,7 +523,7 @@ xgb_model_full <- xgb.train(
         model_params
     ),
     data = dtrain_full,
-    nrounds = 100,
+    nrounds = 1000,
     early_stopping_rounds = 10,
     watchlist = list(train = dtrain_full, val = dval)
 )
@@ -523,9 +537,4 @@ save(xgb_model, xgb_model_full,
 
 ```{r echo = FALSE}
 load(get_data_path("xgb_model", adjust_type_str, impute_type_str, include_statin, model = "xgb"))
-```
-
-
-```{r}
-# SHAP?
 ```

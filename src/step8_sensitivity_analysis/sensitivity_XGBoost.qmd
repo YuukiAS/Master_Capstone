@@ -1,10 +1,10 @@
 ---
-title: 'Build Survival Model: XGBoost'
+title: 'Sensitivity Analysis: XGBoost'
 author: 'Mingcheng Hu'
 params:
     adjust_type:
         label: 'Adjustment Type of Survival Model'
-        value: 'minimal'
+        value: 'full'
         choices:
             - 'minimal'
             - 'partial'
@@ -49,7 +49,7 @@ source("/work/users/y/u/yuukias/BIOS-Material/BIOS992/utils/csv_utils.r")
 # * Don't use setwd() for Quarto documents!
 # setwd("/work/users/y/u/yuukias/BIOS-Material/BIOS992/data")
 
-adjust_type <- ifelse(exists("params"), params$adjust_type, "minimal") # options: "minimal", "partial", "full"
+adjust_type <- ifelse(exists("params"), params$adjust_type, "full") # options: "minimal", "partial", "full"
 impute_type <- ifelse(exists("params"), params$impute_type, "unimputed") # options: "unimputed", "imputed"
 include_statin <- ifelse(exists("params"), params$include_statin, "no") # options: "yes", "no"
 
@@ -104,6 +104,55 @@ colnames(data)
 data <- tibble::as_tibble(data)
 ```
 
+```{r label = "Full Data Specific Processing"}
+# * There are some imputed ethnicity set to "e". We will exclude them at this time.
+data <- data %>%
+    filter(ethnicity != "e")
+
+# * We also need to manually relevel the categorical variables
+data <- data %>%
+    mutate(
+        # Set "Never" (0) as baseline for smoking
+        smoking = factor(smoking,
+            levels = c("0", "1", "2", "-3"),
+            labels = c("Never", "Previous", "Current", "Prefer not to answer")
+        ),
+
+        # Set "No" (0) as baseline for diabetes
+        diabetes = factor(diabetes,
+            levels = c("0", "1", "-1", "-3"),
+            labels = c("No", "Yes", "Do not know", "Prefer not to answer")
+        ),
+
+        # Ensure other categorical variables are properly factored
+        ethnicity = factor(ethnicity,
+            levels = c("1", "2", "3", "4", "5", "6"),
+            labels = c("White", "Mixed", "Asian/Asian British", "Black/Black British", "Chinese", "Other")
+        ),
+        education = factor(education,
+            levels = c("1", "2", "3", "4", "5", "6", "-7", "-3"),
+            labels = c(
+                "College/University degree", "A levels/AS levels",
+                "O levels/GCSEs", "CSEs", "NVQ/HND/HNC",
+                "Other professional", "None of the above",
+                "Prefer not to answer"
+            )
+        ),
+        activity = factor(activity,
+            levels = c("0", "1", "2"),
+            labels = c("Low", "Moderate", "High")
+        ),
+        sex = factor(sex,
+            levels = c("0", "1"),
+            labels = c("Female", "Male")
+        ),
+        hypertension_treatment = factor(hypertension_treatment,
+            levels = c("0", "1"),
+            labels = c("No", "Yes")
+        )
+    )
+```
+
 ```{r}
 # * It is very hard to compare the HR as different predictors are on different magnitudes, so we need to normalize them.
 time_col <- data$time
@@ -136,8 +185,12 @@ val_data <- data[-train_index, ]
 
 ## Data Preparation
 
+XGBoost does not support categorical variables. We need to convert them to dummy variables using `model.matrix`.
+
 ```{r}
-total_x <- as.matrix(data %>% select(-c(time, event)))
+total_x <- data %>% select(-c(time, event))
+total_x_xgb <- model.frame(~ . - 1, data = total_x, na.action = na.pass)
+total_x_xgb <- model.matrix(~ . - 1, data = total_x_xgb)
 total_y <- data %>% select(time, event)
 # * Note format of label should be different when using Cox model and AFT model.
 # define For uncensored labels, use [a,a]
@@ -145,28 +198,31 @@ total_y <- data %>% select(time, event)
 total_y_lower_bound <- data$time
 total_y_upper_bound <- ifelse(data$event == 1, data$time, Inf)
 
-train_x <- as.matrix(train_data %>% select(-c(time, event)))
+train_x <- train_data %>% select(-c(time, event))
+# * To avoid deleting rows, we need to set na.action to na.pass for model.matrix
+train_x_xgb <- model.frame(~ . - 1, data = train_x, na.action = na.pass)
+train_x_xgb <- model.matrix(~ . - 1, data = train_x_xgb)
 train_y_lower_bound <- train_data$time
 train_y_upper_bound <- ifelse(train_data$event == 1, train_data$time, Inf)
 dtrain <- xgb.DMatrix(
-    data = train_x,
+    data = train_x_xgb,
     label_lower_bound = train_y_lower_bound,
     label_upper_bound = train_y_upper_bound
 )
 
-val_x <- as.matrix(val_data %>% select(-c(time, event)))
+val_x <- val_data %>% select(-c(time, event))
+val_x_xgb <- model.frame(~ . - 1, data = val_x, na.action = na.pass)
+val_x_xgb <- model.matrix(~ . - 1, data = val_x_xgb)
 val_y_lower_bound <- val_data$time
 val_y_upper_bound <- ifelse(val_data$event == 1, val_data$time, Inf)
 dval <- xgb.DMatrix(
-    data = val_x,
+    data = val_x_xgb,
     label_lower_bound = val_y_lower_bound,
     label_upper_bound = val_y_upper_bound
 )
 ```
 
 ## Hyperparameter Tuning
-
-Since there is no
 
 ```{r}
 # Ref Barnwal, A., Cho ,Hyunsu, & and Hocking, T. (2022). Survival Regression with Accelerated Failure Time Model in XGBoost. Journal of Computational and Graphical Statistics, 31(4), 1292–1302. https://doi.org/10.1080/10618600.2022.2067548
@@ -226,7 +282,7 @@ tune_xgb <- function(params_trial) {
 }
 ```
 
-```{r title = "Tuning XGBoost hyperparameters"}
+```{r title = "Tuning XGBoost hyperparameters", eval = FALSE}
 tuning_results <- pmclapply(1:n_trials, function(i) {
     params_trial <- generate_design_random(param_set, n = 1)$data
     params_trial <- param_set$trafo(params_trial)
@@ -235,14 +291,14 @@ tuning_results <- pmclapply(1:n_trials, function(i) {
 }, title = "Tuning XGBoost hyperparameters")
 ```
 
-```{r echo = FALSE}
+```{r echo = FALSE, eval = FALSE}
 save(tuning_results,
-    file = get_data_path("xgb_tuning_results", adjust_type_str, impute_type_str, include_statin, model = "xgb")
+    file = get_data_path("xgb_tuning_results", adjust_type_str, impute_type_str, include_statin, model = "sensitivity")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("xgb_tuning_results", adjust_type_str, impute_type_str, include_statin, model = "xgb"))
+load(get_data_path("xgb_tuning_results", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```
 
 ```{r}
@@ -297,12 +353,12 @@ xgb_var_select <- xgb.train(
 
 ```{r echo = FALSE}
 save(xgb_var_select,
-    file = get_data_path("xgb_var_select_model", adjust_type_str, impute_type_str, include_statin, model = "xgb")
+    file = get_data_path("xgb_var_select_model", adjust_type_str, impute_type_str, include_statin, model = "sensitivity")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("xgb_var_select_model", adjust_type_str, impute_type_str, include_statin, model = "xgb"))
+load(get_data_path("xgb_var_select_model", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```
 
 ```{r label = "Variable Selection-2"}
@@ -321,14 +377,19 @@ folds <- createFolds(data$event, k = n_folds)
 
 cv_errors <- pmclapply(seq(1, length(vars_ranked), by = 1), function(num_vars) {
     selected_vars <- vars_ranked[1:num_vars]
-    print(paste0("Selecting ", num_vars, " variables"))
     fold_errors <- sapply(folds, function(fold_idx) {
         # * We take all training data and validation data and then split them into folds.
-        train_x_fold <- as.matrix(total_x[-fold_idx, selected_vars, drop = FALSE])
+        # train_x_fold <- total_x[-fold_idx, selected_vars, drop = FALSE]
+        # train_x_fold <- model.frame(~ . - 1, data = train_x_fold, na.action = na.pass)
+        # train_x_fold <- model.matrix(~ . - 1, data = train_x_fold)
+        train_x_fold <- total_x_xgb[-fold_idx, selected_vars, drop = FALSE]
         train_y_lower_fold <- total_y_lower_bound[-fold_idx]
         train_y_upper_fold <- total_y_upper_bound[-fold_idx]
 
-        val_x_fold <- as.matrix(total_x[fold_idx, selected_vars, drop = FALSE])
+        # val_x_fold <- total_x[fold_idx, selected_vars, drop = FALSE]
+        # val_x_fold <- model.frame(~ . - 1, data = val_x_fold, na.action = na.pass)
+        # val_x_fold <- model.matrix(~ . - 1, data = val_x_fold)
+        val_x_fold <- total_x_xgb[fold_idx, selected_vars, drop = FALSE]
         val_y_lower_fold <- total_y_lower_bound[fold_idx]
         val_y_upper_fold <- total_y_upper_bound[fold_idx]
         val_y_fold <- total_y[fold_idx, ]  # for C-index calculation
@@ -381,12 +442,12 @@ vars_selected <- vars_ranked[1:best_num_vars]
 
 ```{r echo = FALSE}
 save(cv_errors, vars_selected,
-    file = get_data_path("xgb_var_select_name", adjust_type_str, impute_type_str, include_statin, model = "xgb")
+    file = get_data_path("xgb_var_select_name", adjust_type_str, impute_type_str, include_statin, model = "sensitivity")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("xgb_var_select_name", adjust_type_str, impute_type_str, include_statin, model = "xgb"))
+load(get_data_path("xgb_var_select_name", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```
 
 ```{r}
@@ -403,16 +464,26 @@ print(paste0("The best number of features to retain is ", best_num_vars))
 ## Model Fitting
 
 ```{r label = "Model Fitting"}
+train_x_selected <- train_x_xgb[, vars_selected]
+# No need to change the label
+train_y_lower_bound_selected <- train_y_lower_bound
+train_y_upper_bound_selected <- train_y_upper_bound
+
 dtrain_selected <- xgb.DMatrix(
-    data = train_x[, vars_selected],
-    label_lower_bound = train_y_lower_bound,
-    label_upper_bound = train_y_upper_bound
+    data = train_x_selected,
+    label_lower_bound = train_y_lower_bound_selected,
+    label_upper_bound = train_y_upper_bound_selected
 )
+val_x_selected <- val_x_xgb[, vars_selected]
+val_y_lower_bound_selected <- val_y_lower_bound
+val_y_upper_bound_selected <- val_y_upper_bound
 dval_selected <- xgb.DMatrix(
-    data = val_x[, vars_selected],
-    label_lower_bound = val_y_lower_bound,
-    label_upper_bound = val_y_upper_bound
+    data = val_x_selected,
+    label_lower_bound = val_y_lower_bound_selected,
+    label_upper_bound = val_y_upper_bound_selected
 )
+
+
 xgb_model <- xgb.train(
     params = c(
         list(
@@ -430,11 +501,16 @@ xgb_model <- xgb.train(
 ```
 
 ```{r}
+train_x_full <- model.frame(~ . - 1, data = train_x, na.action = na.pass)
+train_x_full <- model.matrix(~ . - 1, data = train_x_full)
+train_y_lower_bound_full <- train_y_lower_bound
+train_y_upper_bound_full <- train_y_upper_bound
 dtrain_full <- xgb.DMatrix(
-    data = train_x,
-    label_lower_bound = train_y_lower_bound,
-    label_upper_bound = train_y_upper_bound
+    data = train_x_full,
+    label_lower_bound = train_y_lower_bound_full,
+    label_upper_bound = train_y_upper_bound_full
 )
+
 # We also fit the full model
 xgb_model_full <- xgb.train(
     params = c(
@@ -454,15 +530,10 @@ xgb_model_full <- xgb.train(
 
 ```{r echo = FALSE}
 save(xgb_model, xgb_model_full,
-    file = get_data_path("xgb_model", adjust_type_str, impute_type_str, include_statin, model = "xgb")
+    file = get_data_path("xgb_model", adjust_type_str, impute_type_str, include_statin, model = "sensitivity")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("xgb_model", adjust_type_str, impute_type_str, include_statin, model = "xgb"))
-```
-
-
-```{r}
-# SHAP?
+load(get_data_path("xgb_model", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```

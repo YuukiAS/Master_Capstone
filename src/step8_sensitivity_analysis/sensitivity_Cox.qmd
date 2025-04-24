@@ -1,5 +1,5 @@
 ---
-title: 'Build Survival Model: Cox Proportional Hazards Model'
+title: 'Sensitivity Analysis: Cox Proportional Hazards Model'
 author: 'Mingcheng Hu'
 params:
     adjust_type:
@@ -11,7 +11,7 @@ params:
             - 'full'
     impute_type:
         label: 'Imputation Type'
-        value: 'imputed'
+        value: 'unimputed'
         choices:
             - 'unimputed'
             - 'imputed'
@@ -46,7 +46,7 @@ source("/work/users/y/u/yuukias/BIOS-Material/BIOS992/utils/csv_utils.r")
 # setwd("/work/users/y/u/yuukias/BIOS-Material/BIOS992/data")
 
 adjust_type <- ifelse(exists("params"), params$adjust_type, "full") # options: "minimal", "partial", "full"
-impute_type <- ifelse(exists("params"), params$impute_type, "imputed") # options: "unimputed", "imputed"
+impute_type <- ifelse(exists("params"), params$impute_type, "unimputed") # options: "unimputed", "imputed"
 include_statin <- ifelse(exists("params"), params$include_statin, "no") # options: "yes", "no"
 ```
 
@@ -218,12 +218,12 @@ results_univariate <- results_univariate %>% arrange(desc(hr)) # sort descending
 
 ```{r echo = FALSE, eval = FALSE}
 save(results_univariate,
-    file = get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = "cox")
+    file = get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = "sensitivity")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+load(get_data_path("cox_model_univariate", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```
 
 ```{r fig.height=30, fig.width=20}
@@ -277,12 +277,12 @@ summary(cox_model_full_complete)
 ```{r echo = FALSE, eval = FALSE}
 save(cox_model_full,
     cox_model_full_complete,
-    file = get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin, model = "cox")
+    file = get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin, model = "sensitivity")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+load(get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```
 
 # PH Assumption Assessment
@@ -303,7 +303,7 @@ indicating that the Cox proportional hazards model was appropriate for our analy
 
 ## LASSO 
 
-```{r label = "LASSO: Hyperparameter Selection"}
+```{r label = "LASSO: Hyperparameter Selection", eval = FALSE}
 # * LASSO doesn't allow missing values
 set.seed(1234)
 # x <- as.matrix(data_complete %>% select(-c(time, event)))
@@ -342,12 +342,12 @@ print(selected_vars)
 save(cox_model_lasso.cv,
     cox_model_lasso,
     cox_model_lasso.coef,
-    file = get_data_path("cox_model_lasso", adjust_type_str, impute_type_str, include_statin, model = "cox")
+    file = get_data_path("cox_model_lasso", adjust_type_str, impute_type_str, include_statin, model = "sensitivity")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("cox_model_lasso", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+load(get_data_path("cox_model_lasso", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```
 
 ```{r label = "LASSO: Visualize the LASSO Path"}
@@ -380,12 +380,12 @@ cox_model_step <- MASS::stepAIC(cox_model_full_complete,
 
 ```{r echo = FALSE, eval = FALSE}
 save(cox_model_step,
-    file = get_data_path("cox_model_step", adjust_type_str, impute_type_str, include_statin, model = "cox")
+    file = get_data_path("cox_model_step", adjust_type_str, impute_type_str, include_statin, model = "sensitivity")
 )
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("cox_model_step", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+load(get_data_path("cox_model_step", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```
 
 ```{r}
@@ -473,11 +473,11 @@ for (variable in variable_names_all) {
 ```{r echo = FALSE}
 # Save the selected times for each variable
 save(variable_selection_matrix,
-    file = get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+    file = get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```
 
 ```{r echo = FALSE}
-load(get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+load(get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = "sensitivity"))
 ```
 
 ```{r}

@@ -128,6 +128,14 @@ get_data_path <- function(prefix, adjust_type, impute_type, include_statin, mode
             paste0(work_dir, "/", prefix, "_", adjust_type, "_", impute_type, ".RData")
         }
         return(path)
+    } else if (model == "sensitivity") {
+        work_dir <- "/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/step8_sensitivity_analysis"
+        path <- if (include_statin == "yes") {
+            paste0(work_dir, "/", prefix, "_", adjust_type, "_", impute_type, "_statin.RData")
+        } else {
+            paste0(work_dir, "/", prefix, "_", adjust_type, "_", impute_type, ".RData")
+        }
+        return(path)
     } else {
         stop("Invalid model type!")
     }
