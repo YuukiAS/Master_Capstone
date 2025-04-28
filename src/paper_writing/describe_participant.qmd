@@ -117,6 +117,9 @@ list("tbl_summary-fn:percent_fun" = label_style_number(scale = 100, digits = 2))
 data %>%
     tbl_summary(
         by = "event",
+        type = list(
+            hypertension_treatment ~ "categorical"
+        ),
         digits = list(
             all_continuous() ~ 1,
             all_categorical() ~ c(0, 2)  # 0 for count, 2 for percentage

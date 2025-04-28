@@ -1,0 +1,80 @@
+---
+title: 'Variable Selection Result: All Models'
+author: 'Mingcheng Hu'
+format: 
+    pdf:
+        toc: true
+        keep-tex: true
+        include-in-header: 
+            text: |
+                \usepackage{fvextra}
+                \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+                \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+
+```{r output = FALSE}
+library(tidyverse)
+library(kableExtra)
+library(xgboost)
+
+source("/work/users/y/u/yuukias/BIOS-Material/BIOS992/utils/csv_utils.r")
+```
+
+For simplicity, we only consider the fully-adjusted models.
+
+```{r}
+results <- list()
+```
+
+## LASSO
+
+```{r}
+adjust_type_str <- "full"
+impute_type_str <- "imputed"
+include_statin <- "no"
+load(get_data_path("cox_model_lasso", 
+                   adjust_type_str, 
+                   impute_type_str, 
+                   include_statin, 
+                   model = "cox"))
+results$lasso <- cox_model_lasso.coef %>% as.matrix %>% as.data.frame %>% filter(s0 != 0.000000e+00) %>% pull(s0)
+names(results$lasso) <- cox_model_lasso.coef %>% as.matrix %>% as.data.frame %>% filter(s0 != 0.000000e+00) %>% rownames
+```
+
+
+## Stepwise
+
+```{r}
+load(get_data_path("cox_model_step", 
+                   adjust_type_str, 
+                   impute_type_str, 
+                   include_statin, 
+                   model = "cox"))
+results$stepwise <- cox_model_step$coef
+```
+
+# RSF
+
+
+```{r}
+load(get_data_path("vimp_rsf", 
+                   adjust_type_str, 
+                   impute_type_str, 
+                   include_statin, 
+                   model = "rsf"))
+results$rsf <- vimp_rsf$importance
+```
+
+# XGBoost
+
+
+```{r}
+load(get_data_path("xgb_model", 
+                   adjust_type_str, 
+                   impute_type_str, 
+                   include_statin, 
+                   model = "xgb"))
+results$xgb <- xgb.importance(model = xgb_model) %>% as.data.frame %>% pull(Gain)
+names(results$xgb) <- xgb.importance(model = xgb_model) %>% as.data.frame %>% pull(Feature)
+```

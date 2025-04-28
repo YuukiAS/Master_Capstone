@@ -261,6 +261,166 @@ results_univariate %>%
 ```
 
 
+```{r eval = FALSE}
+format_predictor_names <- function(predictor) {
+    name_map <- c(
+        "age" = "Age",
+        "BMI" = "Body Mass Index",
+        "diabetesYes" = "Diabetes: Yes",
+        "diabetesDo not know" = "Diabetes: Don't know",
+        "diabetesPrefer not to answer" = "Diabetes: Prefer not to answer",
+        "hypertension_treatmentYes" = "Hypertension Treatment: Yes",
+        "sexMale" = "Sex: Male",
+        "systolic_bp" = "Systolic Blood Pressure",
+        "total_chol" = "Total Cholesterol",
+        "hdl_chol" = "HDL Cholesterol",
+        "max_workload" = "Maximum Workload",
+        "max_heart_rate" = "Maximum Heart Rate"
+    )
+
+    if (grepl("^ethnicity", predictor)) {
+        return(paste0("Ethnicity: ", gsub("^ethnicity", "", predictor)))
+    }
+    if (grepl("^smoking", predictor)) {
+        return(paste0("Smoking: ", gsub("^smoking", "", predictor)))
+    }
+    if (grepl("^education", predictor)) {
+        return(paste0("Education: ", gsub("^education", "", predictor)))
+    }
+    if (grepl("^activity", predictor)) {
+        return(paste0("Physical Activity: ", gsub("^activity", "", predictor)))
+    }
+
+    if (grepl("^HRV_", predictor)) {
+        clean_name <- gsub("^HRV_", "", predictor)
+
+        if (clean_name %in% c(
+            "SD1", "SD2", "SD1SD2", "S", "CSI", "CVI",
+            "CSI_Modified", "PIP", "IALS", "PSS", "PAS",
+            "GI", "SI", "AI", "PI", "C1d", "C1a",
+            "SD1d", "SD1a", "C2d", "C2a", "SD2d", "SD2a",
+            "Cd", "Ca", "SDNNd", "SDNNa"
+        )) {
+            return(paste0(clean_name, " (Poincare)"))
+        }
+        # Entropy measures
+        else if (clean_name %in% c("ApEn", "ShanEn", "FuzzyEn", "MSEn", "CMSEn", "RCMSEn")) {
+            return(paste0(clean_name, " (Entropy)"))
+        }
+        # Fractal measures
+        else if (clean_name %in% c(
+            "CD", "HFD", "KFD", "LZC", "DFA_alpha1",
+            "MFDFA_alpha1_Width", "MFDFA_alpha1_Peak",
+            "MFDFA_alpha1_Mean", "MFDFA_alpha1_Max", "MFDFA_alpha1_Delta",
+            "MFDFA_alpha1_Asymmetry", "MFDFA_alpha1_Fluctuation",
+            "MFDFA_alpha1_Increment"
+        )) {
+            return(paste0(clean_name, " (Fractal)"))
+        }
+        # Time domain measures
+        else if (clean_name %in% c(
+            "MeanNN", "SDNN", "RMSSD", "SDSD", "CVNN",
+            "CVSD", "MedianNN", "MadNN", "MCVNN", "IQRNN",
+            "SDRMSSD", "Prc20NN", "Prc80NN", "pNN50", "pNN20",
+            "MinNN", "MaxNN", "HTI", "TINN"
+        )) {
+            return(paste0(clean_name, " (Time)"))
+        }
+        # Frequency domain measures
+        else if (clean_name %in% c(
+            "LF", "HF", "VHF", "TP", "LFHF", "LFn",
+            "HFn", "LnHF"
+        )) {
+            return(paste0(clean_name, " (Frequency)"))
+        }
+    }
+
+    return(name_map[predictor] %||% predictor)
+}
+
+results_univariate_pdf <- results_univariate %>%
+    mutate(
+        predictor = sapply(predictor, format_predictor_names),
+        p_value = format(as.numeric(p_value), scientific = TRUE, digits = 2)
+    )
+
+
+# save as PDF for paper
+pdf("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/paper_writing/forest_plot_univariate_full.pdf",
+    height = 30,
+    width = 20
+)
+
+n_rows <- nrow(results_univariate_pdf)
+split_point <- ceiling(n_rows / 2)
+
+# First page
+results_univariate_pdf[1:split_point, ] %>%
+    forestplot(
+        labeltext = c(predictor, hr, ci, p_value),
+        mean = hr,
+        lower = lower_ci,
+        upper = upper_ci,
+        xlab = "Hazard Ratio",
+        title = "Univariate Cox Models (1/2)",
+        xlog = TRUE,
+        boxsize = 0.2,
+        xticks = c(0.2, 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2),
+        clip = c(0.2, 3.2),
+        zero = 1
+    ) %>%
+    fp_set_style(
+        box = "royalblue",
+        line = "darkblue",
+        summary = "royalblue"
+    ) %>%
+    fp_add_header(
+        predictor = c("Predictor", ""),
+        hr = c("Hazard Ratio", ""),
+        ci = c("95% CI", ""),
+        p_value = c("p-value", "")
+    ) %>%
+    fp_decorate_graph(
+        box = gpar(lty = 2, col = "lightgray"),
+        graph.pos = 4
+    ) %>%
+    fp_set_zebra_style("#f9f9f9")
+
+# Second page
+results_univariate_pdf[(split_point + 1):n_rows, ] %>%
+    forestplot(
+        labeltext = c(predictor, hr, ci, p_value),
+        mean = hr,
+        lower = lower_ci,
+        upper = upper_ci,
+        xlab = "Hazard Ratio",
+        title = "Univariate Cox Models (2/2)",
+        xlog = TRUE,
+        boxsize = 0.2,
+        xticks = c(0.2, 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2),
+        clip = c(0.2, 3.2),
+        zero = 1
+    ) %>%
+    fp_set_style(
+        box = "royalblue",
+        line = "darkblue",
+        summary = "royalblue"
+    ) %>%
+    fp_add_header(
+        predictor = c("Predictor", ""),
+        hr = c("Hazard Ratio", ""),
+        ci = c("95% CI", ""),
+        p_value = c("p-value", "")
+    ) %>%
+    fp_decorate_graph(
+        box = gpar(lty = 2, col = "lightgray"),
+        graph.pos = 4
+    ) %>%
+    fp_set_zebra_style("#f9f9f9")
+
+dev.off()
+```
+
 
 # Multivariate Cox Proportional Hazards Model
 
@@ -283,6 +443,100 @@ save(cox_model_full,
 
 ```{r echo = FALSE}
 load(get_data_path("cox_model_multivariate", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+```
+
+
+```{r eval = FALSE}
+results_multivariate <- broom::tidy(cox_model_full_complete, conf.int = TRUE, exponentiate = TRUE) %>%
+    filter(!is.na(estimate)) %>%
+    mutate(
+        hr = format(round(estimate, 2), nsmall = 2),
+        lower_ci = conf.low,
+        upper_ci = conf.high,
+        ci = sprintf("(%.2f,%.2f)", conf.low, conf.high)
+    ) %>% 
+    arrange(desc(estimate))
+
+results_multivariate_pdf <- results_multivariate %>%
+    mutate(
+        predictor = sapply(term, format_predictor_names),
+        p_value = format(as.numeric(p.value), scientific = TRUE, digits = 2)
+    ) %>%
+    filter(predictor != "RMSSD (Time)")
+
+pdf("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/paper_writing/forest_plot_multivariate_full.pdf",
+    height = 30,
+    width = 20
+)
+
+n_rows <- nrow(results_multivariate_pdf)
+split_point <- ceiling(n_rows / 2)
+
+# First page
+results_multivariate_pdf[1:split_point, ] %>%
+    forestplot(
+        labeltext = c(predictor, hr, ci, p_value),
+        mean = estimate,
+        lower = lower_ci,
+        upper = upper_ci,
+        xlab = "Hazard Ratio",
+        title = "Multivariate Cox Model (1/2)",
+        xlog = TRUE,
+        boxsize = 0.2,
+        xticks = c(0.2, 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2),
+        clip = c(0.2, 3.2),
+        zero = 1
+    ) %>%
+    fp_set_style(
+        box = "royalblue",
+        line = "darkblue",
+        summary = "royalblue"
+    ) %>%
+    fp_add_header(
+        predictor = c("Predictor", ""),
+        hr = c("Hazard Ratio", ""),
+        ci = c("95% CI", ""),
+        p_value = c("p-value", "")
+    ) %>%
+    fp_decorate_graph(
+        box = gpar(lty = 2, col = "lightgray"),
+        graph.pos = 4
+    ) %>%
+    fp_set_zebra_style("#f9f9f9")
+
+# Second page
+results_multivariate_pdf[(split_point + 1):n_rows, ] %>%
+    forestplot(
+        labeltext = c(predictor, hr, ci, p_value),
+        mean = estimate,
+        lower = lower_ci,
+        upper = upper_ci,
+        xlab = "Hazard Ratio",
+        title = "Multivariate Cox Model (2/2)",
+        xlog = TRUE,
+        boxsize = 0.2,
+        xticks = c(0.2, 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2),
+        clip = c(0.2, 3.2),
+        zero = 1
+    ) %>%
+    fp_set_style(
+        box = "royalblue",
+        line = "darkblue",
+        summary = "royalblue"
+    ) %>%
+    fp_add_header(
+        predictor = c("Predictor", ""),
+        hr = c("Hazard Ratio", ""),
+        ci = c("95% CI", ""),
+        p_value = c("p-value", "")
+    ) %>%
+    fp_decorate_graph(
+        box = gpar(lty = 2, col = "lightgray"),
+        graph.pos = 4
+    ) %>%
+    fp_set_zebra_style("#f9f9f9")
+
+dev.off()
 ```
 
 # PH Assumption Assessment
@@ -473,7 +727,8 @@ for (variable in variable_names_all) {
 ```{r echo = FALSE}
 # Save the selected times for each variable
 save(variable_selection_matrix,
-    file = get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = "cox"))
+    file = get_data_path("cox_var_select_result", adjust_type_str, impute_type_str, include_statin, model = "cox")
+)
 ```
 
 ```{r echo = FALSE}

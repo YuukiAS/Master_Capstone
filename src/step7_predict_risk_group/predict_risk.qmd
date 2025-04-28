@@ -209,6 +209,31 @@ ggsurvplot(
 )
 ```
 
+```{r, eval = FALSE}
+png("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/paper_writing/KM_rsf.png",
+    height = 2000,
+    width = 2000,
+    res = 300
+)
+ggsurvplot(
+    fit = survfit(Surv(time, event) ~ risk_group_rsf, data = data_complete),
+    data = data_complete,
+    pval = TRUE,
+    conf.int = TRUE,
+    risk.table = FALSE,
+    linetype = "strata",
+    surv.median.line = "hv",
+    ggtheme = theme_bw(),
+    palette = "npg",
+    title = "Survival curves by risk groups (RSF)",
+    xlab = "Time in years",
+    break.time.by = 365.25,  # tick
+    xscale = "d_y",          # convert time scale from day to year
+    ylim = c(0.7, 1)
+)
+dev.off()
+```
+
 ## Predict using XGBoost Model
 
 ```{r}
@@ -245,4 +270,31 @@ ggsurvplot(
     xscale = "d_y",          # convert time scale from day to year
     ylim = c(0.7, 1)
 )
+```
+
+
+
+```{r, eval = FALSE}
+png("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/paper_writing/KM_xgb.png",
+    height = 2000,
+    width = 2000,
+    res = 300
+)
+ggsurvplot(
+    fit = survfit(Surv(time, event) ~ risk_group_xgb, data = data_complete),
+    data = data_complete,
+    pval = TRUE,
+    conf.int = TRUE,
+    risk.table = FALSE,
+    linetype = "strata",
+    surv.median.line = "hv",
+    ggtheme = theme_bw(),
+    palette = "npg",
+    title = "Survival curves by risk groups (XGBoost)",
+    xlab = "Time in years",
+    break.time.by = 365.25,  # tick
+    xscale = "d_y",          # convert time scale from day to year
+    ylim = c(0.7, 1)
+)
+dev.off()
 ```

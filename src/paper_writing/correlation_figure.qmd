@@ -1,0 +1,166 @@
+---
+title: 'Calculate Descriptive Statistics of Participants'
+author: 'Mingcheng Hu'
+format: 
+    pdf:
+        toc: true
+        keep-tex: true
+        include-in-header: 
+            text: |
+                \usepackage{fvextra}
+                \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+                \DefineVerbatimEnvironment{OutputCode}{Verbatim}{breaklines,commandchars=\\\{\}}
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(corrplot)
+library(cowplot)
+
+source("/work/users/y/u/yuukias/BIOS-Material/BIOS992/utils/csv_utils.r")
+```
+
+# Load Data
+
+```{r}
+train_data <- read.csv("/work/users/y/u/yuukias/BIOS-Material/BIOS992/data/train_data_unimputed.csv")
+
+test_data <- read.csv("/work/users/y/u/yuukias/BIOS-Material/BIOS992/data/test_data_unimputed.csv")
+
+print(dim(train_data))
+print(dim(test_data))
+```
+
+```{r}
+total_data <- bind_rows(train_data, test_data) %>% select(-c(X))
+
+print(dim(total_data))
+```
+
+# Split Data
+
+```{r}
+feature_category <- list(
+    # covariates = c(
+    #     "age", "sex", "ethnicity", "BMI",
+    #     "smoking", "diabetes", "systolic_bp", "hypertension_treatment",
+    #     "total_chol", "hdl_chol", "education", "activity",
+    #     "max_workload", "max_heart_rate"
+    # ),
+    hrv_time = c(
+        "HRV_MeanNN", "HRV_SDNN", "HRV_RMSSD", "HRV_SDSD", "HRV_CVNN",
+        "HRV_CVSD", "HRV_MedianNN", "HRV_MadNN", "HRV_MCVNN", "HRV_IQRNN",
+        "HRV_SDRMSSD", "HRV_Prc20NN", "HRV_Prc80NN", "HRV_pNN50", "HRV_pNN20",
+        "HRV_MinNN", "HRV_MaxNN", "HRV_HTI", "HRV_TINN"
+    ),
+    hrv_freq = c(
+        "HRV_LF", "HRV_HF", "HRV_VHF", "HRV_TP", "HRV_LFHF", "HRV_LFn",
+        "HRV_HFn", "HRV_LnHF"
+    ),
+    hrv_poincare = c(
+        "HRV_SD1", "HRV_SD2", "HRV_SD1SD2", "HRV_S", "HRV_CSI", "HRV_CVI",
+        "HRV_CSI_Modified", "HRV_PIP", "HRV_IALS", "HRV_PSS", "HRV_PAS",
+        "HRV_GI", "HRV_SI", "HRV_AI", "HRV_PI", "HRV_C1d", "HRV_C1a",
+        "HRV_SD1d", "HRV_SD1a", "HRV_C2d", "HRV_C2a", "HRV_SD2d", "HRV_SD2a",
+        "HRV_Cd", "HRV_Ca", "HRV_SDNNd", "HRV_SDNNa"
+    ),
+    hrv_entropy = c(
+        "HRV_ApEn", "HRV_ShanEn", "HRV_FuzzyEn", "HRV_MSEn",
+        "HRV_CMSEn", "HRV_RCMSEn"
+    ),
+    hrv_fractal = c(
+        "HRV_CD", "HRV_HFD", "HRV_KFD", "HRV_LZC", "HRV_DFA_alpha1",
+        "HRV_MFDFA_alpha1_Width", "HRV_MFDFA_alpha1_Peak",
+        "HRV_MFDFA_alpha1_Mean", "HRV_MFDFA_alpha1_Max", "HRV_MFDFA_alpha1_Delta",
+        "HRV_MFDFA_alpha1_Asymmetry", "HRV_MFDFA_alpha1_Fluctuation",
+        "HRV_MFDFA_alpha1_Increment"
+    )
+)
+```
+
+```{r}
+# data_covariates <- total_data %>% select(all_of(feature_category$covariates))
+data_hrv_time <- total_data %>% select(all_of(feature_category$hrv_time))
+data_hrv_freq <- total_data %>% select(all_of(feature_category$hrv_freq))
+data_hrv_poincare <- total_data %>% select(all_of(feature_category$hrv_poincare))
+data_hrv_entropy <- total_data %>% select(all_of(feature_category$hrv_entropy))
+data_hrv_fractal <- total_data %>% select(all_of(feature_category$hrv_fractal))
+```
+
+```{r}
+# remove prefix "HRV_"
+clean_colnames <- function(data) {
+    colnames(data) <- gsub("^HRV_", "", colnames(data))
+    return(data)
+}
+
+data_hrv_time <- data_hrv_time %>% clean_colnames()
+data_hrv_freq <- data_hrv_freq %>% clean_colnames()
+data_hrv_poincare <- data_hrv_poincare %>% clean_colnames()
+data_hrv_entropy <- data_hrv_entropy %>% clean_colnames()
+data_hrv_fractal <- data_hrv_fractal %>% clean_colnames()
+```
+
+# Calculate Correlation
+
+```{r}
+# corr_covariates <- cor(data_covariates, use = "pairwise.complete.obs")
+corr_hrv_time <- cor(data_hrv_time, use = "pairwise.complete.obs")
+corr_hrv_freq <- cor(data_hrv_freq, use = "pairwise.complete.obs")
+corr_hrv_poincare <- cor(data_hrv_poincare, use = "pairwise.complete.obs")
+corr_hrv_entropy <- cor(data_hrv_entropy, use = "pairwise.complete.obs")
+corr_hrv_fractal <- cor(data_hrv_fractal, use = "pairwise.complete.obs")
+```
+
+# Visualize Correlation
+
+```{r}
+create_correlation_plot <- function(corr_matrix, title) {
+    par(mar = c(0, 0, 4, 0))
+    corrplot.mixed(
+        corr_matrix,
+        upper = "circle",
+        lower = "number",
+        tl.cex = 0.7,
+        tl.pos = "lt",
+        tl.col = "black",
+        # title = title,
+        mar = c(0, 0, 2, 0)
+    )
+    # change size of title
+    title(
+        main = title,
+        line = 1,
+        cex.main = 5
+    )
+}
+```
+
+```{r}
+plot_hrv_time <- create_correlation_plot(corr_hrv_time, "HRV Time Domain")
+plot_hrv_freq <- create_correlation_plot(corr_hrv_freq, "HRV Frequency Domain")
+plot_hrv_poincare <- create_correlation_plot(corr_hrv_poincare, "HRV Poincaré")
+plot_hrv_entropy <- create_correlation_plot(corr_hrv_entropy, "HRV Entropy")
+plot_hrv_fractal <- create_correlation_plot(corr_hrv_fractal, "HRV Fractal")
+```
+
+
+```{r}
+pdf("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/paper_writing/linear_correlation_plot.pdf", 
+    width = 30, height = 15)
+par(mfrow = c(1, 2))
+create_correlation_plot(corr_hrv_time, "HRV Time Domain")
+create_correlation_plot(corr_hrv_freq, "HRV Frequency Domain")
+dev.off()
+```
+
+```{r}
+pdf("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/paper_writing/nonlinear_correlation_plot.pdf", 
+    width = 40, height = 16)
+par(mfrow = c(1, 3))
+create_correlation_plot(corr_hrv_poincare, "HRV Poincaré")
+create_correlation_plot(corr_hrv_entropy, "HRV Entropy")
+create_correlation_plot(corr_hrv_fractal, "HRV Fractal")
+dev.off()
+```

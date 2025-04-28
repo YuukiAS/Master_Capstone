@@ -348,8 +348,116 @@ shap.plot.summary(shap_long)
 ```
 
 
+```{r eval = FALSE}
+format_predictor_names <- function(predictor) {
+    name_map <- c(
+        "age" = "Age",
+        "BMI" = "Body Mass Index",
+        "diabetesYes" = "Diabetes: Yes",
+        "diabetesDo not know" = "Diabetes: Don't know",
+        "diabetesPrefer not to answer" = "Diabetes: Prefer not to answer",
+        "hypertension_treatmentYes" = "Hypertension Treatment: Yes",
+        "sexMale" = "Sex: Male",
+        "systolic_bp" = "Systolic Blood Pressure",
+        "total_chol" = "Total Cholesterol",
+        "hdl_chol" = "HDL Cholesterol",
+        "max_workload" = "Maximum Workload",
+        "max_heart_rate" = "Maximum Heart Rate"
+    )
+
+    if (grepl("^ethnicity", predictor)) {
+        return(paste0("Ethnicity: ", gsub("^ethnicity", "", predictor)))
+    }
+    if (grepl("^smoking", predictor)) {
+        return(paste0("Smoking: ", gsub("^smoking", "", predictor)))
+    }
+    if (grepl("^education", predictor)) {
+        return(paste0("Education: ", gsub("^education", "", predictor)))
+    }
+    if (grepl("^activity", predictor)) {
+        return(paste0("Physical Activity: ", gsub("^activity", "", predictor)))
+    }
+
+    if (grepl("^HRV_", predictor)) {
+        clean_name <- gsub("^HRV_", "", predictor)
+
+        if (clean_name %in% c(
+            "SD1", "SD2", "SD1SD2", "S", "CSI", "CVI",
+            "CSI_Modified", "PIP", "IALS", "PSS", "PAS",
+            "GI", "SI", "AI", "PI", "C1d", "C1a",
+            "SD1d", "SD1a", "C2d", "C2a", "SD2d", "SD2a",
+            "Cd", "Ca", "SDNNd", "SDNNa"
+        )) {
+            return(paste0(clean_name, " (Poincare)"))
+        }
+        # Entropy measures
+        else if (clean_name %in% c("ApEn", "ShanEn", "FuzzyEn", "MSEn", "CMSEn", "RCMSEn")) {
+            return(paste0(clean_name, " (Entropy)"))
+        }
+        # Fractal measures
+        else if (clean_name %in% c(
+            "CD", "HFD", "KFD", "LZC", "DFA_alpha1",
+            "MFDFA_alpha1_Width", "MFDFA_alpha1_Peak",
+            "MFDFA_alpha1_Mean", "MFDFA_alpha1_Max", "MFDFA_alpha1_Delta",
+            "MFDFA_alpha1_Asymmetry", "MFDFA_alpha1_Fluctuation",
+            "MFDFA_alpha1_Increment"
+        )) {
+            return(paste0(clean_name, " (Fractal)"))
+        }
+        # Time domain measures
+        else if (clean_name %in% c(
+            "MeanNN", "SDNN", "RMSSD", "SDSD", "CVNN",
+            "CVSD", "MedianNN", "MadNN", "MCVNN", "IQRNN",
+            "SDRMSSD", "Prc20NN", "Prc80NN", "pNN50", "pNN20",
+            "MinNN", "MaxNN", "HTI", "TINN"
+        )) {
+            return(paste0(clean_name, " (Time)"))
+        }
+        # Frequency domain measures
+        else if (clean_name %in% c(
+            "LF", "HF", "VHF", "TP", "LFHF", "LFn",
+            "HFn", "LnHF"
+        )) {
+            return(paste0(clean_name, " (Frequency)"))
+        }
+    }
+
+    return(name_map[predictor] %||% predictor)
+}
+```
+
+```{r eval = FALSE}
+png("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/paper_writing/shap.png",
+    height = 3000,
+    width = 2000,
+    res = 300
+)
+
+shap_values <- shap.values(xgb_model = xgb_model, X_train = test_x_xgb[, vars_selected])
+shap_long <- shap.prep(shap_contrib = shap_values$shap_score, X_train = test_x_xgb[, vars_selected])
+shap_long$variable <- sapply(shap_long$variable, format_predictor_names)
+shap_long$variable <- factor(shap_long$variable, levels = unique(shap_long$variable))
+shap.plot.summary(shap_long, dilute = 5)  # dilute to plot less data (1/5)
+dev.off()
+```
+
 ```{r dev='png', dpi=300, fig.height=30, fig.width=20}
 shap_values <- shap.values(xgb_model = xgb_model_full, X_train = test_x_xgb)
 shap_long <- shap.prep(shap_contrib = shap_values$shap_score, X_train = test_x_xgb)
 shap.plot.summary(shap_long)
+```
+
+```{r eval = FALSE}
+png("/work/users/y/u/yuukias/BIOS-Material/BIOS992/src/paper_writing/shap_full.png",
+    height = 15000,
+    width = 10000,
+    res = 600
+)
+
+shap_values <- shap.values(xgb_model = xgb_model_full, X_train = test_x_xgb)
+shap_long <- shap.prep(shap_contrib = shap_values$shap_score, X_train = test_x_xgb)
+shap_long$variable <- sapply(shap_long$variable, format_predictor_names)
+shap_long$variable <- factor(shap_long$variable, levels = unique(shap_long$variable))
+shap.plot.summary(shap_long, dilute = 10)  # dilute to plot less data (1/5)
+dev.off()
 ```
